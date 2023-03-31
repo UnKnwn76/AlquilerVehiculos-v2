@@ -1,0 +1,174 @@
+/*************************************************
+	 Ismail Hilmi
+	 1ºDAW
+	 Tarea online 05
+*************************************************/
+package org.iesalandalus.programacion.alquilervehiculos.modelo.negocio.ficheros;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.naming.OperationNotSupportedException;
+
+import org.iesalandalus.programacion.alquilervehiculos.modelo.dominio.Cliente;
+import org.iesalandalus.programacion.alquilervehiculos.modelo.negocio.IClientes;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+public class Clientes implements IClientes {
+
+	/*************************************************
+	 * ATRIBUTOS Y CONSTANTES
+	 *************************************************/
+
+	private static final File FICHERO_CLIENTES = new File(
+			String.format("%s%s%s", "datos", File.separator, "clientes.xml"));
+
+	private static final String RAIZ = "clientes";
+	private static final String CLIENTE = "cliente";
+	private static final String NOMBRE = "nombre";
+	private static final String DNI = "dni";
+	private static final String TELEFONO = "telefono";
+
+	private List<Cliente> coleccionClientes;
+	private static Clientes instancia;
+
+	/**************************************************
+	 * CONSTRUCTORES
+	 **************************************************/
+	private Clientes() {
+		coleccionClientes = new ArrayList<>();
+	}
+
+	/**************************************************
+	 * METODOS
+	 **************************************************/
+
+	static Clientes getInstancia() {
+		if (instancia == null) {
+			instancia = new Clientes();
+		}
+		return instancia;
+	}
+
+	@Override
+	public List<Cliente> get() {
+		return new ArrayList<>(coleccionClientes);
+	}
+
+	@Override
+	public void insertar(Cliente cliente) throws OperationNotSupportedException {
+		if (cliente == null) {
+			throw new NullPointerException("ERROR: No se puede insertar un cliente nulo.");
+		}
+
+		if (coleccionClientes.contains(cliente)) {
+			throw new OperationNotSupportedException("ERROR: Ya existe un cliente con ese DNI.");
+		}
+
+		coleccionClientes.add(cliente);
+	}
+
+	@Override
+	public Cliente buscar(Cliente cliente) {
+		if (cliente == null) {
+			throw new NullPointerException("ERROR: No se puede buscar un cliente nulo.");
+		}
+		int indice = coleccionClientes.indexOf(cliente);
+		return indice == -1 ? null : coleccionClientes.get(indice);
+	}
+
+	@Override
+	public void borrar(Cliente cliente) throws OperationNotSupportedException {
+
+		if (cliente == null) {
+			throw new NullPointerException("ERROR: No se puede borrar un cliente nulo.");
+		}
+		if (!coleccionClientes.contains(cliente)) {
+			throw new OperationNotSupportedException("ERROR: No existe ningún cliente con ese DNI.");
+		}
+		coleccionClientes.remove(cliente);
+	}
+
+	@Override
+	public void modificar(Cliente cliente, String nombre, String telefono) throws OperationNotSupportedException {
+
+		if (cliente == null) {
+			throw new NullPointerException("ERROR: No se puede modificar un cliente nulo.");
+		}
+		if (!coleccionClientes.contains(cliente)) {
+			throw new OperationNotSupportedException("ERROR: No existe ningún cliente con ese DNI.");
+		} else {
+			if (nombre != null && !nombre.isBlank()) {
+				cliente.setNombre(nombre);
+			}
+			if (telefono != null && !telefono.isBlank()) {
+				cliente.setTelefono(telefono);
+			}
+		}
+
+	}
+
+	/**************************************************
+	 * METODOS AÑADIDOS
+	 **************************************************/
+
+	@Override
+	public void comenzar() {
+		Document documentoXml = UtilidadesXML.leerXmlDeFichero(FICHERO_CLIENTES);
+        if (documentoXml != null) {
+            leerDom(documentoXml);
+        }
+	}
+
+	private void leerDom(Document documentoXml) {
+		NodeList listaClientes  = documentoXml.getElementsByTagName(CLIENTE);
+		for (int i = 0; i < listaClientes.getLength(); i++) {
+	        Element elementoCliente = (Element) listaClientes.item(i);
+	        Cliente cliente = getCliente(elementoCliente);
+	        coleccionClientes.add(cliente);
+	    }
+	}
+
+	private Cliente getCliente(Element elemento) {
+
+		String nombre = elemento.getAttribute(NOMBRE);
+		String dni = elemento.getAttribute(DNI);
+		String telefono = elemento.getAttribute(TELEFONO);
+
+		return new Cliente(nombre, dni, telefono);
+	}
+
+	@Override
+	public void terminar() {
+		UtilidadesXML.escribirXmlAFichero(crearDom(), FICHERO_CLIENTES);
+	}
+
+	private Document crearDom() {
+	    Document documentoXml = UtilidadesXML.crearConstructorDocumentoXml().newDocument();
+		Element elementoClientes = documentoXml.createElement(RAIZ);
+		documentoXml.appendChild(elementoClientes);
+		for (Cliente cliente : coleccionClientes) {
+		    Element elementoCliente = getElemento(documentoXml, cliente);
+		    elementoClientes.appendChild(elementoCliente);
+		}
+
+	    return documentoXml;
+
+	}
+
+	private Element getElemento(Document documentoXml, Cliente cliente) {
+		// Crear el elemento #cliente.
+		Element elementoCliente = documentoXml.createElement(CLIENTE);
+
+		// Añadir los atributos #nombre, #dni y #telefono.
+		elementoCliente.setAttribute(NOMBRE, cliente.getNombre());
+		elementoCliente.setAttribute(DNI, cliente.getDni());
+		elementoCliente.setAttribute(TELEFONO, cliente.getTelefono());
+
+		return elementoCliente;
+	}
+
+}
