@@ -15,6 +15,7 @@ import org.iesalandalus.programacion.alquilervehiculos.modelo.dominio.Cliente;
 import org.iesalandalus.programacion.alquilervehiculos.modelo.negocio.IClientes;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class Clientes implements IClientes {
@@ -98,14 +99,15 @@ public class Clientes implements IClientes {
 		if (cliente == null) {
 			throw new NullPointerException("ERROR: No se puede modificar un cliente nulo.");
 		}
-		if (!coleccionClientes.contains(cliente)) {
+		Cliente clienteBusc = buscar(cliente);
+		if (clienteBusc==null) {
 			throw new OperationNotSupportedException("ERROR: No existe ningún cliente con ese DNI.");
 		} else {
 			if (nombre != null && !nombre.isBlank()) {
-				cliente.setNombre(nombre);
+				clienteBusc.setNombre(nombre);
 			}
 			if (telefono != null && !telefono.isBlank()) {
-				cliente.setTelefono(telefono);
+				clienteBusc.setTelefono(telefono);
 			}
 		}
 
@@ -120,15 +122,26 @@ public class Clientes implements IClientes {
 		Document documentoXml = UtilidadesXML.leerXmlDeFichero(FICHERO_CLIENTES);
         if (documentoXml != null) {
             leerDom(documentoXml);
-        }
+            System.out.println("El documento de clientes ha sido leído correctamente.");
+		}else {
+			System.out.println("Error: El documento de clientes no ha sido leído correctamente.");
+		}
 	}
 
 	private void leerDom(Document documentoXml) {
-		NodeList listaClientes  = documentoXml.getElementsByTagName(CLIENTE);
-		for (int i = 0; i < listaClientes.getLength(); i++) {
-	        Element elementoCliente = (Element) listaClientes.item(i);
-	        Cliente cliente = getCliente(elementoCliente);
-	        coleccionClientes.add(cliente);
+		NodeList nodosClientes  = documentoXml.getElementsByTagName(CLIENTE);
+		for (int i = 0; i < nodosClientes.getLength(); i++) {
+			Node cliente = nodosClientes.item(i);
+			if (cliente.getNodeType() == Node.ELEMENT_NODE) {
+				try {
+					insertar(getCliente((Element) cliente));
+				} catch (Exception e) {
+					System.out.println("Error al insertar de cliente: Nº "+i+", " + e.getMessage());
+				}
+			}
+	        
+	      
+	        
 	    }
 	}
 
@@ -152,7 +165,7 @@ public class Clientes implements IClientes {
 		documentoXml.appendChild(elementoClientes);
 		for (Cliente cliente : coleccionClientes) {
 		    Element elementoCliente = getElemento(documentoXml, cliente);
-		    elementoClientes.appendChild(elementoCliente);
+		    documentoXml.getDocumentElement().appendChild(elementoCliente);
 		}
 
 	    return documentoXml;
