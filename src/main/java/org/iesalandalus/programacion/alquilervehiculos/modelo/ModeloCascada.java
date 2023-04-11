@@ -16,9 +16,16 @@ import org.iesalandalus.programacion.alquilervehiculos.modelo.dominio.Vehiculo;
 
 public class ModeloCascada extends Modelo {
 
+	/***************************************************
+	 * CONSTRUCTOR
+	 ***************************************************/
 	public ModeloCascada(FactoriaFuenteDatos factoriaFuenteDatos) {
 		super(factoriaFuenteDatos);
 	}
+
+	/***************************************************
+	 * METODOS DE INSERTAR
+	 ***************************************************/
 
 	@Override
 	public void insertar(Cliente cliente) throws OperationNotSupportedException {
@@ -39,6 +46,10 @@ public class ModeloCascada extends Modelo {
 				getVehiculos().buscar(alquiler.getVehiculo()), alquiler.getFechaAlquiler()));
 	}
 
+	/***************************************************
+	 * METODOS DE BUSCAR
+	 ***************************************************/
+
 	@Override
 	public Cliente buscar(Cliente cliente) {
 		return new Cliente(getClientes().buscar(cliente));
@@ -54,11 +65,19 @@ public class ModeloCascada extends Modelo {
 		return new Alquiler(getAlquileres().buscar(alquiler));
 	}
 
+	/***************************************************
+	 * METODOS DE MODIFICAR
+	 ***************************************************/
+
 	@Override
 	public void modificar(Cliente cliente, String nombre, String telefono) throws OperationNotSupportedException {
 		getClientes().modificar(cliente, nombre, telefono);
 
 	}
+
+	/***************************************************
+	 * METODOS DE DEVOLVER
+	 ***************************************************/
 
 	@Override
 	public void devolver(Cliente cliente, LocalDate fechaDevolucion) throws OperationNotSupportedException {
@@ -74,22 +93,22 @@ public class ModeloCascada extends Modelo {
 	/***************************************************
 	 * METODOS DE BORRAR
 	 ***************************************************/
-	
+
 	@Override
 	public void borrar(Cliente cliente) throws OperationNotSupportedException {
 		for (Alquiler alquiler : getAlquileres().get(cliente)) {
-			getAlquileres().borrar(alquiler); //buscamos en la lista las qluileres de dicho cliente y las borramos
+			getAlquileres().borrar(alquiler); // buscamos en la lista las qluileres de dicho cliente y las borramos
 		}
-		getClientes().borrar(cliente); //luego borramos el cliente
+		getClientes().borrar(cliente); // luego borramos el cliente
 
 	}
 
 	@Override
 	public void borrar(Vehiculo vehiculo) throws OperationNotSupportedException {
 		for (Alquiler alquiler : getAlquileres().get(vehiculo)) {
-			getAlquileres().borrar(alquiler); //buscamos en la lista las alquileres de dicho vehículo y las borramos
+			getAlquileres().borrar(alquiler); // buscamos en la lista las alquileres de dicho vehículo y las borramos
 		}
-		getVehiculos().borrar(vehiculo); //luego borramos el vehículo
+		getVehiculos().borrar(vehiculo); // luego borramos el vehículo
 
 	}
 
@@ -102,7 +121,7 @@ public class ModeloCascada extends Modelo {
 	/***************************************************
 	 * METODOS DE GET
 	 ***************************************************/
-	
+
 	@Override
 	public List<Cliente> getListaClientes() {
 		List<Cliente> listaClientes = new ArrayList<>();

@@ -19,23 +19,21 @@ import org.iesalandalus.programacion.alquilervehiculos.modelo.negocio.IFuenteDat
 import org.iesalandalus.programacion.alquilervehiculos.modelo.negocio.IVehiculos;
 
 public abstract class Modelo {
-	
+
 	private IAlquileres alquileres;
 	private IClientes clientes;
 	private IVehiculos vehiculos;
 	private IFuenteDatos fuenteDatos;
-	
-	
-	protected Modelo(FactoriaFuenteDatos factoriaFuenteDatos ) {
-		if (factoriaFuenteDatos == null) {
-			throw new NullPointerException("ERROR! La factoria de fuente de datos no puede ser nula.");
-		}
+
+	protected Modelo(FactoriaFuenteDatos factoriaFuenteDatos) {
+
 		setFuenteDatos(factoriaFuenteDatos.crear());
 		alquileres = fuenteDatos.crearAlquileres();
 		clientes = fuenteDatos.crearClientes();
 		vehiculos = fuenteDatos.crearVehiculos();
-		
+
 	}
+
 	public void comenzar() {
 		clientes.comenzar();
 		vehiculos.comenzar();
@@ -43,7 +41,9 @@ public abstract class Modelo {
 	}
 
 	public void terminar() {
-		System.out.println("El modelo ha terminado!!!");
+		clientes.terminar();
+		vehiculos.terminar();
+		alquileres.terminar();
 	}
 
 	protected IAlquileres getAlquileres() {
@@ -59,40 +59,47 @@ public abstract class Modelo {
 	}
 
 	protected void setFuenteDatos(IFuenteDatos fuenteDatos) {
-		if (fuenteDatos==null) {
-			throw new NullPointerException("");
+		if (fuenteDatos == null) {
+			throw new NullPointerException("ERROR: La fuente de datos no puede ser nula.");
 		}
 		this.fuenteDatos = fuenteDatos;
 	}
-	
-	/*CLASES ABSTRACTAS*/
-	
+
+	/* CLASES ABSTRACTAS */
+
 	public abstract void insertar(Cliente cliente) throws OperationNotSupportedException;
+
 	public abstract void insertar(Vehiculo vehiculo) throws OperationNotSupportedException;
+
 	public abstract void insertar(Alquiler alquiler) throws OperationNotSupportedException;
-	
+
 	public abstract Cliente buscar(Cliente cliente);
+
 	public abstract Vehiculo buscar(Vehiculo vehiculo);
+
 	public abstract Alquiler buscar(Alquiler alquiler);
-	
-	public abstract void modificar(Cliente cliente, String nombre, String telefono) throws OperationNotSupportedException;
-	
+
+	public abstract void modificar(Cliente cliente, String nombre, String telefono)
+			throws OperationNotSupportedException;
+
 	public abstract void devolver(Cliente cliente, LocalDate fechaDevolucion) throws OperationNotSupportedException;
+
 	public abstract void devolver(Vehiculo vehiculo, LocalDate fechaDevolucion) throws OperationNotSupportedException;
-	
+
 	public abstract void borrar(Cliente cliente) throws OperationNotSupportedException;
+
 	public abstract void borrar(Vehiculo vehiculo) throws OperationNotSupportedException;
+
 	public abstract void borrar(Alquiler alquiler) throws OperationNotSupportedException;
-	
+
 	public abstract List<Cliente> getListaClientes();
+
 	public abstract List<Vehiculo> getListaVehiculos();
+
 	public abstract List<Alquiler> getListaAlquileres();
+
 	public abstract List<Alquiler> getListaAlquileres(Cliente cliente);
+
 	public abstract List<Alquiler> getListaAlquileres(Vehiculo vehiculo);
-	
-	
-	
-	
-	
-	
+
 }
