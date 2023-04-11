@@ -6,7 +6,9 @@
 
 package org.iesalandalus.programacion.alquilervehiculos.modelo.negocio.ficheros;
 
+import java.io.File;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -17,12 +19,26 @@ import org.iesalandalus.programacion.alquilervehiculos.modelo.dominio.Alquiler;
 import org.iesalandalus.programacion.alquilervehiculos.modelo.dominio.Cliente;
 import org.iesalandalus.programacion.alquilervehiculos.modelo.dominio.Vehiculo;
 import org.iesalandalus.programacion.alquilervehiculos.modelo.negocio.IAlquileres;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class Alquileres implements IAlquileres {
 
 	/*************************************************
 	 * ATRIBUTOS Y CONSTANTES
 	 *************************************************/
+
+	private static final File FICHERO_ALQUILERES = new File(
+			String.format("%s%s%s", "datos", File.separator, "alquileres.xml"));
+	private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+	private static final String RAIZ = "alquileres";
+	private static final String ALQUILER = "alquiler";
+	private static final String CLIENTE = "cliente";
+	private static final String VEHICULO = "vehiculo";
+	private static final String FECHA_ALQUILER = "fechaAlquiler";
+	private static final String FECHA_DEVOLUCION = "fechaDevolucion";
 
 	private List<Alquiler> coleccionAlquileres;
 	private static Alquileres instancia;
@@ -45,7 +61,7 @@ public class Alquileres implements IAlquileres {
 		}
 		return instancia;
 	}
-	
+
 	@Override
 	public List<Alquiler> get() {
 		return new ArrayList<>(coleccionAlquileres);
@@ -120,7 +136,7 @@ public class Alquileres implements IAlquileres {
 	private Alquiler getAlquilerAbierto(Cliente cliente) {
 		Iterator<Alquiler> iter = get(cliente).iterator();
 		Alquiler alquilerAbierto = null;
-		while (iter.hasNext()) {
+		while (iter.hasNext() && alquilerAbierto == null) {
 			Alquiler alquiler = iter.next();
 			if (alquiler.getCliente().equals(cliente) && alquiler.getFechaDevolucion() == null) {
 				alquilerAbierto = alquiler;
@@ -132,7 +148,7 @@ public class Alquileres implements IAlquileres {
 	private Alquiler getAlquilerAbierto(Vehiculo vehiculo) {
 		Iterator<Alquiler> iter = get(vehiculo).iterator();
 		Alquiler alquilerAbierto = null;
-		while (iter.hasNext()) {
+		while (iter.hasNext() && alquilerAbierto == null) {
 			Alquiler alquiler = iter.next();
 			if (alquiler.getVehiculo().equals(vehiculo) && alquiler.getFechaDevolucion() == null) {
 				alquilerAbierto = alquiler;
@@ -146,10 +162,11 @@ public class Alquileres implements IAlquileres {
 		if (cliente == null) {
 			throw new NullPointerException("ERROR: No se puede devolver un alquiler de un cliente nulo.");
 		}
-		if (getAlquilerAbierto(cliente) == null) {
+		Alquiler alquilerDev = getAlquilerAbierto(cliente);
+		if (alquilerDev == null) {
 			throw new OperationNotSupportedException("ERROR: No existe ningún alquiler abierto para ese cliente.");
 		}
-		getAlquilerAbierto(cliente).devolver(fechaDevolucion);
+		alquilerDev.devolver(fechaDevolucion);
 
 	}
 
@@ -158,10 +175,11 @@ public class Alquileres implements IAlquileres {
 		if (vehiculo == null) {
 			throw new NullPointerException("ERROR: No se puede devolver un alquiler de un vehículo nulo.");
 		}
-		if (getAlquilerAbierto(vehiculo) == null) {
+		Alquiler alquilerDev = getAlquilerAbierto(vehiculo);
+		if (alquilerDev == null) {
 			throw new OperationNotSupportedException("ERROR: No existe ningún alquiler abierto para ese vehículo.");
 		}
-		getAlquilerAbierto(vehiculo).devolver(fechaDevolucion);
+		alquilerDev.devolver(fechaDevolucion);
 
 	}
 
@@ -172,11 +190,11 @@ public class Alquileres implements IAlquileres {
 		}
 
 		int posicionDeAlquiler = coleccionAlquileres.indexOf(alquiler);
-
-		if (posicionDeAlquiler == -1) {
-			return null;
+		Alquiler alquilerBusc = null;
+		if (posicionDeAlquiler != -1) {
+			alquilerBusc = coleccionAlquileres.get(posicionDeAlquiler);
 		}
-		return coleccionAlquileres.get(posicionDeAlquiler);
+		return alquilerBusc;
 	}
 
 	@Override
@@ -193,4 +211,93 @@ public class Alquileres implements IAlquileres {
 		coleccionAlquileres.remove(alquiler);
 
 	}
+
+	/**************************************************
+	 * METODOS AÑADIDOS
+	 **************************************************/
+
+	@Override
+	public void comenzar() {
+		Document documentoXml = UtilidadesXML.leerXmlDeFichero(FICHERO_ALQUILERES);
+		if (documentoXml != null) {
+			leerDom(documentoXml);
+			System.out.println("El documento de alquileres ha sido leído correctamente.");
+		} else {
+			System.out.println("Error: El documento de alquileres no ha sido leído correctamente.");
+		}
+	}
+
+	private void leerDom(Document documentoXml) {
+
+		NodeList nodosAlquileres = documentoXml.getElementsByTagName(ALQUILER);
+		for (int i = 0; i < nodosAlquileres.getLength(); i++) {
+			Node alquiler = nodosAlquileres.item(i);
+			if (alquiler.getNodeType() == Node.ELEMENT_NODE) {
+				try {
+					insertar(getAlquiler((Element) alquiler));
+				} catch (Exception e) {
+					System.out.println("Error al insertar de alquiler Nº " + i + "," + e.getMessage());
+				}
+			}
+		}
+	}
+
+	private Alquiler getAlquiler(Element elemento) {
+
+		String elementoCliente = elemento.getAttribute(CLIENTE);
+		String elementoVehiculo = elemento.getAttribute(VEHICULO);
+
+		LocalDate fechaAlquiler = LocalDate.parse(elemento.getAttribute(FECHA_ALQUILER), FORMATO_FECHA);
+
+		String fechaDevolucionString = elemento.getAttribute(FECHA_DEVOLUCION);
+		LocalDate fechaDevolucion = null;
+
+		Cliente cliente = Clientes.getInstancia().buscar(Cliente.getClienteConDni(elementoCliente));
+		Vehiculo vehiculo = Vehiculos.getInstancia().buscar(Vehiculo.getVehiculoConMatricula(elementoVehiculo));
+
+		Alquiler alquiler = new Alquiler(cliente, vehiculo, fechaAlquiler);
+		if (!fechaDevolucionString.isEmpty()) {
+			// si existe la fecha de devolución, devolvemos alquiler
+			try {
+				fechaDevolucion = LocalDate.parse(fechaDevolucionString, FORMATO_FECHA);
+				alquiler.devolver(fechaDevolucion);
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+			}
+		}
+		return alquiler;
+
+	}
+
+	@Override
+	public void terminar() {
+		UtilidadesXML.escribirXmlAFichero(crearDom(), FICHERO_ALQUILERES);
+
+	}
+
+	private Document crearDom() {
+		Document documentoXml = UtilidadesXML.crearConstructorDocumentoXml().newDocument();
+		Element elementoAlquileres = documentoXml.createElement(RAIZ);
+		documentoXml.appendChild(elementoAlquileres);
+
+		for (Alquiler alquiler : coleccionAlquileres) {
+			Element elementoAlquiler = getElemento(documentoXml, alquiler);
+			documentoXml.getDocumentElement().appendChild(elementoAlquiler);
+		}
+		return documentoXml;
+	}
+
+	private Element getElemento(Document documentoXml, Alquiler alquiler) {
+
+		Element elemento = documentoXml.createElement(ALQUILER);
+
+		elemento.setAttribute(CLIENTE, alquiler.getCliente().getDni());
+		elemento.setAttribute(VEHICULO, alquiler.getVehiculo().getMatricula());
+		elemento.setAttribute(FECHA_ALQUILER, alquiler.getFechaAlquiler().format(FORMATO_FECHA));
+		if (alquiler.getFechaDevolucion() != null) {
+			elemento.setAttribute(FECHA_DEVOLUCION, alquiler.getFechaDevolucion().format(FORMATO_FECHA));
+		}
+		return elemento;
+	}
+
 }
